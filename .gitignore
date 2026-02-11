@@ -24,6 +24,13 @@ profile.cov
 go.work
 go.work.sum
 
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+crash.log
+
 # env file
 .env
 

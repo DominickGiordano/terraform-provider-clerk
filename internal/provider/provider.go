@@ -1,0 +1,103 @@
+package provider
+
+import (
+	"context"
+	"os"
+
+	clerkgo "github.com/clerk/clerk-sdk-go/v2"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+)
+
+var _ provider.Provider = &ClerkProvider{}
+
+type ClerkProvider struct {
+	version string
+}
+
+type ClerkProviderModel struct {
+	APIKey types.String `tfsdk:"api_key"`
+}
+
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &ClerkProvider{
+			version: version,
+		}
+	}
+}
+
+func (p *ClerkProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "clerk"
+	resp.Version = p.version
+}
+
+func (p *ClerkProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Description: "Manage Clerk resources.",
+		Attributes: map[string]schema.Attribute{
+			"api_key": schema.StringAttribute{
+				Optional:    true,
+				Sensitive:   true,
+				Description: "Clerk secret key. Can also be set via CLERK_API_KEY environment variable.",
+			},
+		},
+	}
+}
+
+func (p *ClerkProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	tflog.Info(ctx, "Configuring Clerk provider")
+
+	var config ClerkProviderModel
+	diags := req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if config.APIKey.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("api_key"),
+			"Unknown Clerk API Key",
+			"The provider cannot create the Clerk client as there is an unknown configuration value for the API key.",
+		)
+		return
+	}
+
+	apiKey := os.Getenv("CLERK_API_KEY")
+	if !config.APIKey.IsNull() {
+		apiKey = config.APIKey.ValueString()
+	}
+
+	if apiKey == "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("api_key"),
+			"Missing Clerk API Key",
+			"Set the api_key in the provider configuration or via the CLERK_API_KEY environment variable.",
+		)
+		return
+	}
+
+	clerkgo.SetKey(apiKey)
+
+	// Pass a sentinel value so resources know Configure ran successfully.
+	resp.DataSourceData = apiKey
+	resp.ResourceData = apiKey
+
+	tflog.Info(ctx, "Configured Clerk provider")
+}
+
+func (p *ClerkProvider) Resources(_ context.Context) []func() resource.Resource {
+	return []func() resource.Resource{
+		NewJWTTemplateResource,
+	}
+}
+
+func (p *ClerkProvider) DataSources(_ context.Context) []func() datasource.DataSource {
+	return nil
+}
