@@ -23,7 +23,7 @@ provider "clerk" {
 }
 ```
 
-See the [documentation](https://registry.terraform.io/providers/buildwithdeck/clerk/latest/docs) for full resource reference.
+See the [documentation](https://registry.terraform.io/providers/DominickGiordano/clerk/latest/docs) for full resource reference.
 
 ## Supported Resources
 
