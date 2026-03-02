@@ -97,6 +97,12 @@ func (p *ClerkProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewJWTTemplateResource,
 		NewOrganizationResource,
 		NewOrganizationSettingsResource,
+		NewOrganizationPermissionResource,
+		NewOrganizationRoleResource,
+		NewAllowlistIdentifierResource,
+		NewBlocklistIdentifierResource,
+		NewSAMLConnectionResource,
+		NewOrganizationInvitationResource,
 	}
 }
 
