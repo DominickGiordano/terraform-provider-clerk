@@ -103,6 +103,7 @@ func (p *ClerkProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewBlocklistIdentifierResource,
 		NewSAMLConnectionResource,
 		NewOrganizationInvitationResource,
+		NewDomainResource,
 	}
 }
 
