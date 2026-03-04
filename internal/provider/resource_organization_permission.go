@@ -123,6 +123,18 @@ func (r *OrganizationPermissionResource) Create(ctx context.Context, req resourc
 
 	perm, err := organizationpermission.Create(ctx, params)
 	if err != nil {
+		// Already exists — find by key and adopt into state
+		list, listErr := organizationpermission.List(ctx, &organizationpermission.ListParams{})
+		if listErr == nil {
+			for _, existing := range list.OrganizationPermissions {
+				if existing.Key == plan.Key.ValueString() {
+					mapOrgPermissionResponseToModel(existing, &plan)
+					resp.State.Set(ctx, plan)
+					tflog.Debug(ctx, "Adopted existing organization permission", map[string]any{"id": existing.ID})
+					return
+				}
+			}
+		}
 		resp.Diagnostics.AddError("Unable to create organization permission", err.Error())
 		return
 	}

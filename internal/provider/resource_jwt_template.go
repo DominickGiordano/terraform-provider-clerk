@@ -170,6 +170,18 @@ func (r *JWTTemplateResource) Create(ctx context.Context, req resource.CreateReq
 
 	tmpl, err := jwttemplate.Create(ctx, params)
 	if err != nil {
+		// Already exists — find by name and adopt into state
+		list, listErr := jwttemplate.List(ctx, &jwttemplate.ListParams{})
+		if listErr == nil {
+			for _, existing := range list.JWTTemplates {
+				if existing.Name == plan.Name.ValueString() {
+					mapResponseToModel(existing, &plan)
+					resp.State.Set(ctx, plan)
+					tflog.Debug(ctx, "Adopted existing JWT template", map[string]any{"id": existing.ID})
+					return
+				}
+			}
+		}
 		resp.Diagnostics.AddError("Unable to create JWT template", err.Error())
 		return
 	}

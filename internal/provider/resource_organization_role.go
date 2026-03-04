@@ -131,6 +131,18 @@ func (r *OrganizationRoleResource) Create(ctx context.Context, req resource.Crea
 
 	role, err := organizationrole.Create(ctx, params)
 	if err != nil {
+		// Already exists — find by key and adopt into state
+		list, listErr := organizationrole.List(ctx, &organizationrole.ListParams{})
+		if listErr == nil {
+			for _, existing := range list.OrganizationRoles {
+				if existing.Key == plan.Key.ValueString() {
+					mapOrgRoleResponseToModel(existing, &plan)
+					resp.State.Set(ctx, plan)
+					tflog.Debug(ctx, "Adopted existing organization role", map[string]any{"id": existing.ID})
+					return
+				}
+			}
+		}
 		resp.Diagnostics.AddError("Unable to create organization role", err.Error())
 		return
 	}
